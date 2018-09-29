@@ -1,0 +1,17 @@
+{
+  "name": "tiny-mark",
+  "version": "0.1.0",
+  "description": "Tiny WASM markdown to html parser",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "wasm",
+    "markdown",
+    "html",
+    "walt"
+  ],
+  "author": "Arthur Buldauskas",
+  "license": "MIT"
+}
