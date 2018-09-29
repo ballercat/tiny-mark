@@ -1,0 +1,88 @@
+// Tiny-Mark
+import { memory: Memory } from 'env';
+
+// Types
+type Parser = {
+  current: i32,
+  pos: i32
+};
+
+// Globals
+let parsedLength: i32 = 0;
+let parsedStart: i32 = 0;
+
+// Memory
+let memoryOffset: i32 = 0;
+let view: i32[] = 0;
+
+function writeHeader(parser: Parser) {
+  i32.store8(parser.current, '<');
+  i32.store8(parser.current + 1, 'h');
+  i32.store8(parser.current + 2, '1');
+  i32.store8(parser.current + 3, '>');
+
+  parser.current += 4;
+  parser.pos += 2;
+
+  while(i32.load8_u(parser.pos) != 0x0a) {
+    i32.store8(parser.current, i32.load8_u(parser.pos));
+    parser.pos += 1;
+    parser.current += 1;
+  }
+
+  i32.store8(parser.current, '<');
+  i32.store8(parser.current + 1, '/');
+  i32.store8(parser.current + 2, 'h');
+  i32.store8(parser.current + 3, '1');
+  i32.store8(parser.current + 4, '>');
+  parser.current += 5;
+}
+
+//
+// Parses Markdown input returns
+// @param i32 start  The address where to start parsing
+// @param i32 length The length of markdown text
+//
+// @return i32 Address where to start reading the result
+//
+export function parse(start: i32, length: i32): i32 {
+  parsedLength = length;
+  parsedStart = start;
+
+  // set offset
+  memoryOffset = length + start;
+  // create a parser instance
+  const parser: Parser = memoryOffset;
+  memoryOffset += sizeof(Parser);
+
+  parsedLength = 0;
+  parsedStart = memoryOffset;
+
+  view = parsedStart;
+  parser.pos = start;
+  parser.current = parsedStart;
+
+  while(parser.pos < length) {
+    if (i32.load8_u(parser.pos) == '#') {
+      writeHeader(parser);
+    } else {
+      i32.store8(parser.current, i32.load8_u(parser.pos));
+      parser.current += 1;
+    }
+    parser.pos += 1;
+  }
+
+  parsedLength = parser.current - parsedStart;
+
+
+  return 0;
+}
+
+
+export function getLength(): i32 {
+  return parsedLength;
+}
+
+export function getStart(): i32 {
+  return parsedStart;
+}

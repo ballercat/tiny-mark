@@ -4,7 +4,7 @@
   "description": "Tiny WASM markdown to html parser",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "ava"
   },
   "keywords": [
     "wasm",
@@ -13,5 +13,26 @@
     "walt"
   ],
   "author": "Arthur Buldauskas",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "walt-compiler": "^0.12.0"
+  },
+  "devDependencies": {
+    "ava": "^0.25.0",
+    "walt-link": "^0.4.0"
+  },
+  "ava": {
+    "files": [
+      "src/**/*[sS]pec.js",
+      "!**/utils.js"
+    ],
+    "source": [
+      "src/**/*.js",
+      "src/**/*.walt"
+    ],
+    "failFast": true,
+    "failWithoutAssertions": false,
+    "tap": false,
+    "powerAssert": false
+  }
 }
