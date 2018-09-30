@@ -4,7 +4,10 @@
   "description": "Tiny WASM markdown to html parser",
   "main": "index.js",
   "scripts": {
-    "test": "ava"
+    "test": "ava",
+    "debug-container": "node --inspect-brk=\"$(hostname -I | xargs)\" node_modules/ava/profile.js",
+    "build-wasm": "walt src/walt/index.walt -o dist/tiny-mark.wasm",
+    "build": "npm run build-wasm && node_modules/rollup/bin/rollup -c rollup.config.js"
   },
   "keywords": [
     "wasm",
@@ -14,11 +17,16 @@
   ],
   "author": "Arthur Buldauskas",
   "license": "MIT",
-  "dependencies": {
-    "walt-compiler": "^0.12.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "ava": "^0.25.0",
+    "rollup": "^0.66.2",
+    "rollup-plugin-commonjs": "^9.1.8",
+    "rollup-plugin-uglify": "^6.0.0",
+    "rollup-plugin-wasm": "^3.0.0",
+    "uglify-es": "^3.3.9",
+    "walt-cli": "^0.3.1",
+    "walt-compiler": "^0.13.0",
     "walt-link": "^0.4.0"
   },
   "ava": {

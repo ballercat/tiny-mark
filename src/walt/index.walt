@@ -1,88 +1,143 @@
-// Tiny-Mark
-import { memory: Memory } from 'env';
+/**
+ * Tiny Mark
+ *
+ * An experiment in parsing markdown to html via WebAssembly
+ *
+ * @author  Arthur Buldauskas<arthurbulduaskas@gmail.com>
+ */
+import { memory: Memory, log: Logger } from 'env';
 
 // Types
 type Parser = {
   current: i32,
-  pos: i32
+  pos: i32,
+  start: i32,
+  length: i32
 };
+type Logger = (i32) => void;
 
-// Globals
-let parsedLength: i32 = 0;
-let parsedStart: i32 = 0;
 
 // Memory
 let memoryOffset: i32 = 0;
 let view: i32[] = 0;
 
+// Constants
+const HEADER: i32 = 0x00;
+const H1_OPEN: i32[] = ['<', 'h', '1', '>'];
+const H1_CLOSE: i32[] = ['<', '/', 'h', '1', '>'];
+const UL_OPEN: i32 = ['<', 'u', 'l', '>'];
+const UL_CLOSE: i32 = ['<', '/', 'u', 'l', '>'];
+const LI_OPEN: i32 = ['<', 'l', 'i', '>'];
+const LI_CLOSE: i32 = ['<', '/', 'l', 'i', '>'];
+
+const LIST: i32 = 0x01;
+
+/**
+ * Returns a parser instance
+ *
+ */
+function getParser(location: i32, source: i32): i32 {
+  const parser: Parser = location;
+  parser = {
+    start: location + sizeof(Parser),
+    pos: 0,
+    current: source,
+    length: 0
+  };
+
+  return parser;
+}
+
+function increment(parser: Parser, value: i32) {
+  parser.length += value;
+}
+
+function write(parser: Parser, value: i32) {
+  i32.store8(parser.start + parser.length, value);
+  parser.length += 1;
+}
+
+function writeTag(parser: Parser, view: i32[], length: i32) {
+  let i: i32 = 0;
+  for(i = 0; i < length; i += 1) {
+    write(parser, view[i]);
+  }
+}
+
+function read(parser: Parser) : i32 {
+  const char: i32 = i32.load8_u(parser.current);
+  parser.pos += 1;
+  parser.current += 1;
+  return char;
+}
+
 function writeHeader(parser: Parser) {
-  i32.store8(parser.current, '<');
-  i32.store8(parser.current + 1, 'h');
-  i32.store8(parser.current + 2, '1');
-  i32.store8(parser.current + 3, '>');
-
-  parser.current += 4;
-  parser.pos += 2;
-
-  while(i32.load8_u(parser.pos) != 0x0a) {
-    i32.store8(parser.current, i32.load8_u(parser.pos));
-    parser.pos += 1;
-    parser.current += 1;
+  writeTag(parser, H1_OPEN, sizeof(H1_OPEN) / 4);
+  let char: i32 = read(parser);
+  while(char != '\n') {
+    write(parser, char);
+    char = read(parser);
   }
-
-  i32.store8(parser.current, '<');
-  i32.store8(parser.current + 1, '/');
-  i32.store8(parser.current + 2, 'h');
-  i32.store8(parser.current + 3, '1');
-  i32.store8(parser.current + 4, '>');
-  parser.current += 5;
+  writeTag(parser, H1_CLOSE, sizeof(H1_CLOSE) / 4);
 }
 
-//
-// Parses Markdown input returns
-// @param i32 start  The address where to start parsing
-// @param i32 length The length of markdown text
-//
-// @return i32 Address where to start reading the result
-//
-export function parse(start: i32, length: i32): i32 {
-  parsedLength = length;
-  parsedStart = start;
+function writeListItem(parser: Parser) {
+  let char: i32 = read(parser);
+  writeTag(parser, LI_OPEN, sizeof(LI_OPEN) / 4);
 
-  // set offset
-  memoryOffset = length + start;
-  // create a parser instance
-  const parser: Parser = memoryOffset;
-  memoryOffset += sizeof(Parser);
-
-  parsedLength = 0;
-  parsedStart = memoryOffset;
-
-  view = parsedStart;
-  parser.pos = start;
-  parser.current = parsedStart;
-
-  while(parser.pos < length) {
-    if (i32.load8_u(parser.pos) == '#') {
-      writeHeader(parser);
-    } else {
-      i32.store8(parser.current, i32.load8_u(parser.pos));
-      parser.current += 1;
+    while(char != '\n') {
+      write(parser, char);
+      char = read(parser);
     }
-    parser.pos += 1;
+  writeTag(parser, LI_CLOSE, sizeof(LI_CLOSE) / 4);
+}
+function writeList(parser: Parser) {
+  writeTag(parser, UL_OPEN, sizeof(UL_OPEN) / 4);
+  writeListItem(parser);
+  let char: i32 = read(parser);
+  while(char == '*') {
+    writeListItem(parser);
+    char = read(parser);
   }
 
-  parsedLength = parser.current - parsedStart;
-
-
-  return 0;
+  writeTag(parser, UL_CLOSE, sizeof(UL_CLOSE) / 4);
 }
 
+/**
+ * Parses Markdown input returns
+ *
+ * @param i32 start  The address where to start parsing
+ * @param i32 length The length of markdown text
+ *
+ * @return i32 Address where to start reading the result
+ */
+export function parse(start: i32, length: i32): i32 {
+  // create a parser instance
+  const parser: Parser = getParser(start + length, start);
 
-export function getLength(): i32 {
-  return parsedLength;
+  let char: i32 = read(parser);
+  while(parser.pos < length) {
+    if (char == '#') {
+      writeHeader(parser);
+    } else if(char == '*') {
+      writeList(parser);
+    } else {
+      write(parser, char);
+    }
+    char = read(parser);
+  }
+
+  return parser;
 }
 
-export function getStart(): i32 {
-  return parsedStart;
+export function getOffsetStart(): i32 {
+  return memory.dataSize;
+}
+
+export function getLength(parser: Parser): i32 {
+  return parser.length;
+}
+
+export function getStart(parser: Parser): i32 {
+  return parser.start;
 }

@@ -39,20 +39,24 @@ const getFileContents = (file, parent, mode) => {
 };
 
 test('parser tests', t => {
+  debugger;
   const src = `# Header
 
 
 Lorem ipsum.
+
+* Item1
+* Item2
 `;
 
   const factory = link("../walt/index.walt", null, {
     ...compiler,
-    parser: compiler.makeParser([]),
     getFileContents,
     resolve,
   });
   return parse(src, { factory, TextDecoder, TextEncoder }).then(result => {
     t.is(typeof result, 'string');
-    t.snapshot(result);
+    console.log(result);
+    //t.snapshot(result);
   });
 });
