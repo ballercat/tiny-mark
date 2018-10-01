@@ -2,7 +2,7 @@
 function parse(markdown, options) {
   var factory = options.factory;
   var TextEncoder = options.TextEncoder;
-  var TextDecoder = options.TexDecoder;
+  var TextDecoder = options.TextDecoder;
   var memory = new WebAssembly.Memory({ initial: 1 });
   var view = new Uint8Array(memory.buffer);
 

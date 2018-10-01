@@ -1,9 +1,10 @@
 import parseImplementation from './src';
-import factory from './dist/tiny-mark.wasm';
+import factory from './src/walt/index.walt';
 
 export function parse(src) {
+
   return parseImplementation(src, {
-    factory: factory,
+    factory,
     TextEncoder: TextEncoder,
     TextDecoder: TextDecoder
   });
