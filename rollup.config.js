@@ -4,18 +4,11 @@ import { minify } from 'uglify-es';
 import commonjs from 'rollup-plugin-commonjs';
 import string from 'rollup-plugin-string';
 import { compile } from 'walt-compiler';
-const bootstrap = `const {
-  Module,
-  instantiate,
-  Memory,
-  Table
-} = WebAssembly;
+const bootstrap = `
 
-const WebAssemblyModule = function(deps) {
-  return instantiate(buffer, deps);
-}
-
-export default WebAssemblyModule;
+export default function WebAssemblyModule(deps) {
+  return WebAssembly.instantiate(buffer, deps);
+};
 `;
 
 function walt(_options = {}) {
@@ -53,6 +46,6 @@ export default {
   plugins: [
 		walt(),
     commonjs(),
-    //uglify({}, minify),
+    uglify({}, minify),
   ],
 };

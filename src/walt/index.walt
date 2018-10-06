@@ -131,7 +131,7 @@ export function parse(start: i32, length: i32): i32 {
 }
 
 export function getOffsetStart(): i32 {
-  return memory.dataSize;
+  return memory.dataSize();
 }
 
 export function getLength(parser: Parser): i32 {
